@@ -39,6 +39,7 @@ export const users = createTable("user", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
+  requests: many(requests),
 }));
 
 export const accounts = createTable(
@@ -111,6 +112,32 @@ export const verificationTokens = createTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   }),
 );
+
+export const requests = createTable(
+  "request",
+  {
+    id: varchar("id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    count: integer("count").notNull().default(0),
+  },
+  (request) => ({
+    userIdIdx: index("request_user_id_idx").on(request.userId),
+    userTimeIdx: index("request_user_time_idx").on(request.userId, request.createdAt),
+  })
+);
+
+export const requestsRelations = relations(requests, ({ one }) => ({
+  user: one(users, { fields: [requests.userId], references: [users.id] }),
+}));
+
 
 export declare namespace DB {
   export type User = InferSelectModel<typeof users>;

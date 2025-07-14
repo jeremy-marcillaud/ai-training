@@ -6,6 +6,11 @@ import {
 import { model } from "~/model";
 import { searchSerper } from "~/serper";
 import { z } from "zod";
+import { db } from "~/server/db";
+import { users } from "~/server/db/schema";
+import { auth } from "~/server/auth";
+import { eq } from "drizzle-orm";
+import { checkRateLimit, recordRequest } from "~/server/rate-limit";
 
 export const maxDuration = 60;
 
@@ -13,6 +18,22 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     messages: Array<Message>;
   };
+
+  // Get user session
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+
+
+  // Rate limit check
+  const allowed = await checkRateLimit(userId);
+  if (!allowed) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+  await recordRequest(userId);
 
   return createDataStreamResponse({
     execute: async (dataStream) => {
@@ -49,7 +70,9 @@ export async function POST(request: Request) {
         },
       });
 
-      result.mergeIntoDataStream(dataStream);
+      result.mergeIntoDataStream(dataStream, {
+        sendSources: true,
+      });
     },
     onError: (e) => {
       console.error(e);

@@ -45,7 +45,7 @@ const Markdown = ({ children }: { children: string }) => {
 
 const ToolInvocation = ({ part }: { part: MessagePart }) => {
   if (part.type !== "tool-invocation") return null;
-  
+
   const { toolInvocation } = part;
 
   return (
@@ -93,6 +93,29 @@ const ToolInvocation = ({ part }: { part: MessagePart }) => {
   );
 };
 
+const Source = ({ part }: { part: MessagePart }) => {
+  if (part.type !== "source") return null;
+  const { source } = part;
+  return (
+    <div className="mb-2 rounded border border-blue-700 bg-blue-950 p-2 text-xs">
+      <span className="font-semibold text-blue-300">Source: </span>
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 underline"
+      >
+        {source.title ? source.title : source.url}
+      </a>
+      {typeof source.providerMetadata?.provider === "string" && (
+        <span className="ml-2 text-gray-400">
+          ({source.providerMetadata.provider})
+        </span>
+      )}
+    </div>
+  );
+};
+
 export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
   const isAI = role === "assistant";
 
@@ -106,14 +129,17 @@ export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
         <p className="mb-2 text-sm font-semibold text-gray-400">
           {isAI ? "AI" : userName}
         </p>
-
         <div className="prose prose-invert max-w-none">
+          {/* Hover over each MessagePart to see all possible types! */}
           {parts?.map((part, index) => {
             if (part.type === "text") {
               return <Markdown key={index}>{part.text}</Markdown>;
             }
             if (part.type === "tool-invocation") {
               return <ToolInvocation key={index} part={part} />;
+            }
+            if (part.type === "source") {
+              return <Source key={index} part={part} />;
             }
             return null;
           })}
