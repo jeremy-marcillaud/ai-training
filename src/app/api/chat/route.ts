@@ -6,10 +6,7 @@ import {
 import { model } from "~/model";
 import { searchSerper } from "~/serper";
 import { z } from "zod";
-import { db } from "~/server/db";
-import { users } from "~/server/db/schema";
 import { auth } from "~/server/auth";
-import { eq } from "drizzle-orm";
 import { checkRateLimit, recordRequest } from "~/server/rate-limit";
 
 export const maxDuration = 60;
