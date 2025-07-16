@@ -22,6 +22,52 @@ import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
  */
 export const createTable = pgTableCreator((name) => `ai-app-template_${name}`);
 
+export const chats = createTable("chat", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const chatsRelations = relations(chats, ({ one, many}) => ({
+  user: one(users, { fields: [chats.userId], references: [users.id] }),
+  messages: many(messages),
+}));
+
+export const messages = createTable("message", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  chatId: varchar("chat_id", { length: 255 })
+    .notNull()
+    .references(() => chats.id),
+  role: varchar("role", { length: 255 }).notNull().$type<"user" | "assistant">(),
+  parts: json("parts").$type<{
+    type: "text" 
+  }[]>().notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  chat: one(chats, { fields: [messages.chatId], references: [chats.id] }),
+}));
+
 export const users = createTable("user", {
   id: varchar("id", { length: 255 })
     .notNull()
@@ -40,6 +86,7 @@ export const users = createTable("user", {
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   requests: many(requests),
+  chats: many(chats),
 }));
 
 export const accounts = createTable(
