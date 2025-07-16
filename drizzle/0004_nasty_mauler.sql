@@ -1,0 +1,1 @@
+ALTER TABLE "ai-app-template_chat" ADD COLUMN "title" varchar(255) NOT NULL;
