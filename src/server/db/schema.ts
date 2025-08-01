@@ -52,15 +52,13 @@ export const messages = createTable("message", {
   chatId: varchar("chat_id", { length: 255 })
     .notNull()
     .references(() => chats.id),
-  role: varchar("role", { length: 255 }).notNull().$type<"user" | "assistant">(),
-  parts: json("parts").$type<{
-    type: "text" 
-  }[]>().notNull(),
+  role: varchar("role", { length: 255 }).notNull(),
+  parts: json("parts").notNull(),
   order: integer("order").notNull(),
-  createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    withTimezone: true,
+  })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });

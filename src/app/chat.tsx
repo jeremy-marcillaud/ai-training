@@ -6,6 +6,7 @@ import { useChat } from "@ai-sdk/react";
 import { Square } from "lucide-react";
 import { useState } from "react";
 import type { MessagePart } from "~/components/chat-message";
+import { useSearchParams } from "next/navigation";
 
 interface ChatProps {
   userName: string;
@@ -13,17 +14,26 @@ interface ChatProps {
 }
 
 export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
+
+  const searchParams = useSearchParams();
+  const chatId = searchParams.get("chatId")
+
   const {
     messages,
     input,
     handleInputChange,
     handleSubmit,
     isLoading,
-  } = useChat();
+  } = useChat({
+    body: {
+      chatId,
+    }
+  });
 
   const [showSignIn, setShowSignIn] = useState(false);
 
   const handleFormSubmit = (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!isAuthenticated) {
       setShowSignIn(true);

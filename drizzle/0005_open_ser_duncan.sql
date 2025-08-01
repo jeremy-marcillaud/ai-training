@@ -1,0 +1,1 @@
+ALTER TABLE "ai-app-template_message" DROP COLUMN IF EXISTS "updated_at";

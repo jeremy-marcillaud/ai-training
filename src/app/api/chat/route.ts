@@ -2,18 +2,22 @@ import type { Message } from "ai";
 import {
   streamText,
   createDataStreamResponse,
+  appendResponseMessages,
 } from "ai";
 import { model } from "~/model";
 import { searchSerper } from "~/serper";
 import { z } from "zod";
 import { auth } from "~/server/auth";
 import { checkRateLimit, recordRequest } from "~/server/rate-limit";
+import { upsertChat } from "~/server/db/queries/chat-queries";
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+
   const body = (await request.json()) as {
     messages: Array<Message>;
+    chatId?: string;
   };
 
   // Get user session
@@ -34,7 +38,25 @@ export async function POST(request: Request) {
 
   return createDataStreamResponse({
     execute: async (dataStream) => {
-      const { messages } = body;
+      const { messages, chatId } = body;
+      
+      if(!messages.length){
+        throw new Error("No messages provided");
+      }
+
+      let currentChatId = chatId;
+      if(!currentChatId){
+        const newChatId = crypto.randomUUID();
+        const title = messages[messages.length - 1]!.content.slice(0, 100) + '...';
+        
+        await upsertChat({
+          chatId: newChatId,
+          userId,
+          title,
+          messages,
+        })
+        currentChatId = newChatId;
+      } 
 
       const result = streamText({
         model,
@@ -65,6 +87,22 @@ export async function POST(request: Request) {
             },
           },
         },
+        onFinish: (result) => {
+          const responseMessages = result.response.messages;
+
+          const updateMessages = appendResponseMessages({
+            messages,
+            responseMessages,
+          })
+
+          await upsertChat({
+            userId: session.user.id,
+            chatId: currentChatId,
+            title: lastMessage.content.slice(0, 50) + "...",
+            messages: updatedMessages,
+          });
+
+        }
       });
 
       result.mergeIntoDataStream(dataStream, {
