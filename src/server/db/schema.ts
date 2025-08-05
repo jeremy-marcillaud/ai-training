@@ -61,6 +61,10 @@ export const messages = createTable("message", {
   })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+    
 });
 
 export const messagesRelations = relations(messages, ({ one }) => ({

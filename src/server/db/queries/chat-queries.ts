@@ -8,7 +8,11 @@ import type { Message } from "ai";
  * The type returned by getChat, including user and messages relations.
  */
 export type ChatWithUserAndMessages = Awaited<
-  ReturnType<typeof db.query.chats.findFirst>
+  ReturnType<typeof db.query.chats.findFirst<{
+    with: {
+      messages: true;
+    };
+  }>>
 >;
 
 
@@ -19,7 +23,7 @@ export type ChatWithUserAndMessages = Awaited<
  * @returns The chat with user and messages, or null if not found
  */
 export async function getChat({chatId, userId } : {chatId: string, userId: string}): Promise<ChatWithUserAndMessages | null> {
-  const result = await db.query.chats.findFirst({
+  const chat = await db.query.chats.findFirst({
     where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
     with: {
       messages: {
@@ -27,7 +31,12 @@ export async function getChat({chatId, userId } : {chatId: string, userId: strin
       },
     },
   });
-  return result ?? null;
+
+  if(!chat){
+    return null
+  }
+  
+  return chat
 }
 
 

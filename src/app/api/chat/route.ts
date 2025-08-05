@@ -9,7 +9,10 @@ import { searchSerper } from "~/serper";
 import { z } from "zod";
 import { auth } from "~/server/auth";
 import { checkRateLimit, recordRequest } from "~/server/rate-limit";
-import { upsertChat } from "~/server/db/queries/chat-queries";
+import { upsertChat, type ChatWithUserAndMessages } from "~/server/db/queries/chat-queries";
+import { eq } from "drizzle-orm";
+import { db } from "~/server/db";
+import { chats } from "~/server/db/schema";
 
 export const maxDuration = 60;
 
@@ -56,7 +59,22 @@ export async function POST(request: Request) {
           messages,
         })
         currentChatId = newChatId;
-      } 
+      }else {
+        const chat = await db.query.chats.findFirst({
+          where: eq(chats.id, currentChatId),
+        });
+        if(!chat || chat.userId !== userId){
+          throw new Response("Unauthorized", { status: 404 });
+        }
+      }
+
+
+      if(!chatId){
+        dataStream.writeData({
+          type: "NEW_CHAT_CREATED",
+          chatId: currentChatId,
+        })
+      }
 
       const result = streamText({
         model,
@@ -87,7 +105,7 @@ export async function POST(request: Request) {
             },
           },
         },
-        onFinish: (result) => {
+        onFinish: async (result) => {
           const responseMessages = result.response.messages;
 
           const updateMessages = appendResponseMessages({
@@ -95,11 +113,17 @@ export async function POST(request: Request) {
             responseMessages,
           })
 
+          const lastMessage = updateMessages[updateMessages.length - 1]!;
+
+          if(!lastMessage){
+            return;
+          }
+
           await upsertChat({
             userId: session.user.id,
             chatId: currentChatId,
-            title: lastMessage.content.slice(0, 50) + "...",
-            messages: updatedMessages,
+            title: messages[messages.length - 1]!.content.slice(0, 50) + "...",
+            messages: updateMessages,
           });
 
         }

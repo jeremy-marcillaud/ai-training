@@ -2,21 +2,26 @@
 
 import { ChatMessage } from "~/components/chat-message";
 import { SignInModal } from "~/components/sign-in-modal";
-import { useChat } from "@ai-sdk/react";
+import { useChat, type Message } from "@ai-sdk/react";
 import { Square } from "lucide-react";
-import { useState } from "react";
-import type { MessagePart } from "~/components/chat-message";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { isNewChatCreated } from "~/utils";
+import { useRouter } from "next/navigation";
+import type { ChatWithUserAndMessages } from "~/server/db/queries/chat-queries";
 
 interface ChatProps {
   userName: string;
   isAuthenticated: boolean;
+  activeChatId?: string;
+  initialMessages: Message[];
 }
 
-export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
+export const ChatPage = ({ userName, isAuthenticated, activeChatId, initialMessages }: ChatProps) => {
 
-  const searchParams = useSearchParams();
-  const chatId = searchParams.get("chatId")
+
+  const router = useRouter();
+  const [showSignIn, setShowSignIn] = useState(false);
 
   const {
     messages,
@@ -24,13 +29,26 @@ export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
     handleInputChange,
     handleSubmit,
     isLoading,
+    data
   } = useChat({
+    initialMessages,
     body: {
-      chatId,
+      chatId: activeChatId,
     }
   });
 
-  const [showSignIn, setShowSignIn] = useState(false);
+  
+  
+  
+  useEffect(() => {
+    const lastDataItem = data?.[data.length - 1];
+
+    if(lastDataItem && isNewChatCreated(lastDataItem)){ 
+      router.push(`?id=${lastDataItem.chatId}`);
+    }
+
+
+  }, [data])
 
   const handleFormSubmit = (e: React.FormEvent) => {
 
