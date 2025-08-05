@@ -8,16 +8,17 @@ import { useEffect, useState } from "react";
 
 import { isNewChatCreated } from "~/utils";
 import { useRouter } from "next/navigation";
-import type { ChatWithUserAndMessages } from "~/server/db/queries/chat-queries";
+
 
 interface ChatProps {
   userName: string;
   isAuthenticated: boolean;
-  activeChatId?: string;
+  chatId: string;
   initialMessages: Message[];
+  isNewChat: boolean
 }
 
-export const ChatPage = ({ userName, isAuthenticated, activeChatId, initialMessages }: ChatProps) => {
+export const ChatPage = ({ userName, isAuthenticated, chatId, initialMessages, isNewChat }: ChatProps) => {
 
 
   const router = useRouter();
@@ -33,7 +34,8 @@ export const ChatPage = ({ userName, isAuthenticated, activeChatId, initialMessa
   } = useChat({
     initialMessages,
     body: {
-      chatId: activeChatId,
+      chatId,
+      isNewChat
     }
   });
 

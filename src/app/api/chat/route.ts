@@ -20,7 +20,8 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     messages: Array<Message>;
-    chatId?: string;
+    chatId: string;
+    isNewChat: boolean
   };
 
   // Get user session
@@ -41,27 +42,25 @@ export async function POST(request: Request) {
 
   return createDataStreamResponse({
     execute: async (dataStream) => {
-      const { messages, chatId } = body;
+      const { messages, chatId, isNewChat } = body;
       
       if(!messages.length){
         throw new Error("No messages provided");
       }
 
-      let currentChatId = chatId;
-      if(!currentChatId){
-        const newChatId = crypto.randomUUID();
+
+      if(isNewChat){
         const title = messages[messages.length - 1]!.content.slice(0, 100) + '...';
         
         await upsertChat({
-          chatId: newChatId,
+          chatId,
           userId,
           title,
           messages,
         })
-        currentChatId = newChatId;
       }else {
         const chat = await db.query.chats.findFirst({
-          where: eq(chats.id, currentChatId),
+          where: eq(chats.id, chatId),
         });
         if(!chat || chat.userId !== userId){
           throw new Response("Unauthorized", { status: 404 });
@@ -69,10 +68,10 @@ export async function POST(request: Request) {
       }
 
 
-      if(!chatId){
+      if(isNewChat){
         dataStream.writeData({
           type: "NEW_CHAT_CREATED",
-          chatId: currentChatId,
+          chatId: chatId,
         })
       }
 
@@ -121,7 +120,7 @@ export async function POST(request: Request) {
 
           await upsertChat({
             userId: session.user.id,
-            chatId: currentChatId,
+            chatId: chatId,
             title: messages[messages.length - 1]!.content.slice(0, 50) + "...",
             messages: updateMessages,
           });

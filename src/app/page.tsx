@@ -7,10 +7,10 @@ import { getChat, getChats, type ChatWithUserAndMessages } from "~/server/db/que
 import type { Message } from "ai";
 
 
-const activeChatId = "1";
 
 export default async function HomePage({searchParams}: {searchParams: Promise<{id?: string }>}) {
-  const {id: activeChatId} = await searchParams;
+  const {id: activeChatId} = (await searchParams);
+  const chatId = activeChatId ?? crypto.randomUUID()
   const session = await auth();
   const userName = session?.user?.name ?? "Guest";
   const isAuthenticated = !!session?.user;
@@ -23,6 +23,8 @@ export default async function HomePage({searchParams}: {searchParams: Promise<{i
     parts: msg.parts as Message['parts'],
     content: ""
   })) ?? []
+
+  const isNewChat = !activeChatId
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -75,7 +77,7 @@ export default async function HomePage({searchParams}: {searchParams: Promise<{i
       </div>
 
 
-      <ChatPage initialMessages={initialMessages} activeChatId={activeChatId} userName={userName} isAuthenticated={isAuthenticated} />
+      <ChatPage key={chatId} isNewChat={isNewChat} initialMessages={initialMessages} chatId={chatId} userName={userName} isAuthenticated={isAuthenticated} />
 
     </div>
   );
