@@ -9,7 +9,7 @@ import { searchSerper } from "~/serper";
 import { z } from "zod";
 import { auth } from "~/server/auth";
 import { checkRateLimit, recordRequest } from "~/server/rate-limit";
-import { upsertChat, type ChatWithUserAndMessages } from "~/server/db/queries/chat-queries";
+import { upsertChat } from "~/server/db/queries/chat-queries";
 import { eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { chats } from "~/server/db/schema";
@@ -17,11 +17,10 @@ import { chats } from "~/server/db/schema";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-
   const body = (await request.json()) as {
     messages: Array<Message>;
     chatId: string;
-    isNewChat: boolean
+    isNewChat: boolean;
   };
 
   // Get user session
@@ -30,8 +29,6 @@ export async function POST(request: Request) {
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
-
-
 
   // Rate limit check
   const allowed = await checkRateLimit(userId);
@@ -43,36 +40,35 @@ export async function POST(request: Request) {
   return createDataStreamResponse({
     execute: async (dataStream) => {
       const { messages, chatId, isNewChat } = body;
-      
-      if(!messages.length){
+
+      if (!messages.length) {
         throw new Error("No messages provided");
       }
 
+      if (isNewChat) {
+        const title =
+          messages[messages.length - 1]!.content.slice(0, 100) + "...";
 
-      if(isNewChat){
-        const title = messages[messages.length - 1]!.content.slice(0, 100) + '...';
-        
         await upsertChat({
           chatId,
           userId,
           title,
           messages,
-        })
-      }else {
+        });
+      } else {
         const chat = await db.query.chats.findFirst({
           where: eq(chats.id, chatId),
         });
-        if(!chat || chat.userId !== userId){
-          throw new Response("Unauthorized", { status: 404 });
+        if (!chat || chat.userId !== userId) {
+          return new Response("Unauthorized", { status: 404 });
         }
       }
 
-
-      if(isNewChat){
+      if (isNewChat) {
         dataStream.writeData({
           type: "NEW_CHAT_CREATED",
           chatId: chatId,
-        })
+        });
       }
 
       const result = streamText({
@@ -84,7 +80,7 @@ export async function POST(request: Request) {
 3. Carefully read the results from the searchWeb tool.
 4. Use the information from the search results to compose your response.
 5. Always cite your sources with inline markdown links in your answers. For each fact or claim, include a markdown link to the relevant source from the search results.
-6. Ensure your response is clear, accurate, and helpful.`,  
+6. Ensure your response is clear, accurate, and helpful.`,
         maxSteps: 10,
         tools: {
           searchWeb: {
@@ -110,11 +106,11 @@ export async function POST(request: Request) {
           const updateMessages = appendResponseMessages({
             messages,
             responseMessages,
-          })
+          });
 
           const lastMessage = updateMessages[updateMessages.length - 1]!;
 
-          if(!lastMessage){
+          if (!lastMessage) {
             return;
           }
 
@@ -124,8 +120,7 @@ export async function POST(request: Request) {
             title: messages[messages.length - 1]!.content.slice(0, 50) + "...",
             messages: updateMessages,
           });
-
-        }
+        },
       });
 
       result.mergeIntoDataStream(dataStream, {
