@@ -39,7 +39,7 @@ export const chats = createTable("chat", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const chatsRelations = relations(chats, ({ one, many}) => ({
+export const chatsRelations = relations(chats, ({ one, many }) => ({
   user: one(users, { fields: [chats.userId], references: [users.id] }),
   messages: many(messages),
 }));
@@ -64,7 +64,6 @@ export const messages = createTable("message", {
   updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-    
 });
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -180,14 +179,16 @@ export const requests = createTable(
   },
   (request) => ({
     userIdIdx: index("request_user_id_idx").on(request.userId),
-    userTimeIdx: index("request_user_time_idx").on(request.userId, request.createdAt),
-  })
+    userTimeIdx: index("request_user_time_idx").on(
+      request.userId,
+      request.createdAt,
+    ),
+  }),
 );
 
 export const requestsRelations = relations(requests, ({ one }) => ({
   user: one(users, { fields: [requests.userId], references: [users.id] }),
 }));
-
 
 export declare namespace DB {
   export type User = InferSelectModel<typeof users>;

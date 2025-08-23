@@ -3,28 +3,37 @@ import Link from "next/link";
 import { auth } from "~/server/auth/index.ts";
 import { ChatPage } from "./chat.tsx";
 import { AuthButton } from "../components/auth-button.tsx";
-import { getChat, getChats, type ChatWithUserAndMessages } from "~/server/db/queries/chat-queries.ts";
+import { getChat, getChats } from "~/server/db/queries/chat-queries.ts";
 import type { Message } from "ai";
 
-
-
-export default async function HomePage({searchParams}: {searchParams: Promise<{id?: string }>}) {
-  const {id: activeChatId} = (await searchParams);
-  const chatId = activeChatId ?? crypto.randomUUID()
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id: activeChatId } = await searchParams;
+  const chatId = activeChatId ?? crypto.randomUUID();
   const session = await auth();
   const userName = session?.user?.name ?? "Guest";
   const isAuthenticated = !!session?.user;
 
-  const chats =  isAuthenticated && session.user?.id ? await getChats({userId: session.user.id}) : [];
-  const activeChat = activeChatId && isAuthenticated && session.user.id ? await getChat({userId: session.user.id, chatId: activeChatId}) : null
-  const initialMessages = activeChat?.messages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as 'user' | 'assistant',
-    parts: msg.parts as Message['parts'],
-    content: ""
-  })) ?? []
+  const chats =
+    isAuthenticated && session.user?.id
+      ? await getChats({ userId: session.user.id })
+      : [];
+  const activeChat =
+    activeChatId && isAuthenticated && session.user.id
+      ? await getChat({ userId: session.user.id, chatId: activeChatId })
+      : null;
+  const initialMessages =
+    activeChat?.messages.map((msg) => ({
+      id: msg.id,
+      role: msg.role as "user" | "assistant",
+      parts: msg.parts as Message["parts"],
+      content: "",
+    })) ?? [];
 
-  const isNewChat = !activeChatId
+  const isNewChat = !activeChatId;
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -76,9 +85,14 @@ export default async function HomePage({searchParams}: {searchParams: Promise<{i
         </div>
       </div>
 
-
-      <ChatPage key={chatId} isNewChat={isNewChat} initialMessages={initialMessages} chatId={chatId} userName={userName} isAuthenticated={isAuthenticated} />
-
+      <ChatPage
+        key={chatId}
+        isNewChat={isNewChat}
+        initialMessages={initialMessages}
+        chatId={chatId}
+        userName={userName}
+        isAuthenticated={isAuthenticated}
+      />
     </div>
   );
 }

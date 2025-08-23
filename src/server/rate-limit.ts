@@ -2,7 +2,7 @@ import { db } from "./db";
 import { requests, users } from "./db/schema";
 import { and, eq, gte, lte, count } from "drizzle-orm";
 
-const REQUEST_LIMIT = 10;
+const REQUEST_LIMIT = 100;
 
 export async function checkRateLimit(userId: string): Promise<boolean> {
   // Check if user is admin
@@ -21,8 +21,8 @@ export async function checkRateLimit(userId: string): Promise<boolean> {
       and(
         eq(requests.userId, userId),
         gte(requests.createdAt, today),
-        lte(requests.createdAt, tomorrow)
-      )
+        lte(requests.createdAt, tomorrow),
+      ),
     );
   const requestCount = Number(countResult[0]?.count ?? 0);
 

@@ -1,9 +1,7 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { Message } from "ai";
 
-export type MessagePart = NonNullable<
-  Message["parts"]
->[number];
+export type MessagePart = NonNullable<Message["parts"]>[number];
 
 interface ChatMessageProps {
   parts?: MessagePart[];
