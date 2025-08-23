@@ -74,6 +74,9 @@ export async function POST(request: Request) {
       const result = streamText({
         model,
         messages,
+        experimental_telemetry: {
+          isEnabled: true,
+        },
         system: `You are an AI assistant with access to a web search tool. Follow these steps for every user query:
 1. Always call the searchWeb tool with a relevant search query, even if you think you know the answer.
 2. ALWAYS format URLs in markdown link [title](url) format,
